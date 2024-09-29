@@ -1,0 +1,9 @@
+#SocksPort 0.0.0.0:9050
+SocksPort 172.18.0.5:9050
+ControlPort 9051
+CookieAuthentication 1                          # nyx
+CookieAuthFile /var/lib/tor/control_auth_cookie # nyx
+DisableDebuggerAttachment 0                     # nyx
+
+SOCKSPolicy accept 172.18.0.0/29
+SOCKSPolicy reject *

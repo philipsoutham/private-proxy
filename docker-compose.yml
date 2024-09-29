@@ -1,0 +1,53 @@
+name: private-proxy
+
+# https://docs.docker.com/reference/compose-file/services/
+services:
+  tor:
+    hostname: tor
+    build: ./tor
+    runtime: runsc
+    networks:
+      secure-proxy:
+        ipv4_address: 172.18.0.5
+    cap_drop:
+      - "ALL"
+    read_only: true
+    volumes:
+      - "./tor/torrc:/etc/tor/torrc:ro"
+    restart: on-failure:3
+    tmpfs:
+      - /var/lib/tor:mode=700,uid=100,noexec,size=100M
+      - /tmp:noexec,size=100M
+    ports:
+      - "127.0.0.1:9050:9050"
+    entrypoint: tor
+    command: [ "-f", "/etc/tor/torrc" ]
+  privoxy:
+    depends_on:
+      - tor
+    hostname: privoxy
+    build: ./privoxy
+    runtime: runsc
+    cap_drop:
+      - "ALL"
+    links:
+      - tor
+    networks:
+      - secure-proxy
+    read_only: true
+    restart: on-failure:3
+    tmpfs:
+      - /var/log/privoxy:mode=770,uid=100,gid=101,noexec,size=100M
+      - /tmp:noexec,size=100M
+    ports:
+      - "127.0.0.1:8118:8118"
+    entrypoint: privoxy
+    command: [ "--no-daemon", "/etc/privoxy/config" ]
+
+networks:
+  secure-proxy:
+    # https://docs.docker.com/reference/compose-file/networks/#ipam
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.18.0.0/29
